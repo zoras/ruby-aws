@@ -184,6 +184,84 @@ class MechanicalTurkRequester < Amazon::WebServices::Util::ConvenienceWrapper
     return :Updated => updated, :Failed => failed
   end
 
+  # Forces expiration of hits provided. Useful for pausing HITs
+  # * hit_ids is an array of HITIds
+  def forceExpireHITs(hit_ids)
+    tp = Amazon::Util::ThreadPool.new @threadcount
+
+    expired = [].extend(MonitorMixin)
+    failed = [].extend(MonitorMixin)
+    hit_ids.each do |hid|
+      tp.addWork(hid) do |hit_id|
+        begin
+          forceExpireHIT( :HITId => hit_id )
+          expired.synchronize do
+            expired << hit_id
+          end
+        rescue => e
+          failed.synchronize do
+            failed << { :HITId => hit_id, :Error => e.message }
+          end
+        end
+      end # tp.addWork
+    end # hit_ids.each
+    tp.finish
+
+    return :Expired => expired, :Failed => failed
+  end
+  
+  # Adds time for given hits. Useful for resuming paused/expired HITs
+  # * hit_ids is an array of HITIds
+  # * time is time in second we want to add
+  def extendHITs(hit_ids, time)
+    tp = Amazon::Util::ThreadPool.new @threadcount
+
+    extended = [].extend(MonitorMixin)
+    failed = [].extend(MonitorMixin)
+    hit_ids.each do |hid|
+      tp.addWork(hid) do |hit_id|
+        begin
+          extendHIT( :HITId => hit_id, :ExpirationIncrementInSeconds => time )
+          extended.synchronize do
+            extended << hit_id
+          end
+        rescue => e
+          failed.synchronize do
+            failed << { :HITId => hit_id, :Error => e.message }
+          end
+        end
+      end # tp.addWork
+    end # hit_ids.each
+    tp.finish
+
+    return :Extended => extended, :Failed => failed
+  end
+  
+  # Deletes given hits from mturk
+  # * hit_ids is an array of HITIds
+  def deleteHITs(hit_ids)
+    tp = Amazon::Util::ThreadPool.new @threadcount
+
+    deleted = [].extend(MonitorMixin)
+    failed = [].extend(MonitorMixin)
+    hit_ids.each do |hid|
+      tp.addWork(hid) do |hit_id|
+        begin
+          disableHIT( :HITId => hit_id )
+          deleted.synchronize do
+            deleted << hit_id
+          end
+        rescue => e
+          failed.synchronize do
+            failed << { :HITId => hit_id, :Error => e.message }
+          end
+        end
+      end # tp.addWork
+    end # hit_ids.each
+    tp.finish
+
+    return :Deleted => deleted, :Failed => failed
+  end
 
   # Update a HIT with new properties.
   # hit_id:: Id of the HIT to update
