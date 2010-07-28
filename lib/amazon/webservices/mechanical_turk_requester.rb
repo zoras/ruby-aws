@@ -33,6 +33,7 @@ class MechanicalTurkRequester < Amazon::WebServices::Util::ConvenienceWrapper
                                   :AssignmentDurationInSeconds => 60*60,
                                   :AutoApprovalDelayInSeconds => 60*60*24*7,
                                   :LifetimeInSeconds => 60*60*24,
+                                  :ResponseGroup => %w( HITQuestion Minimal)
                                 }
 
   serviceCall :DisableHIT, :DisableHITResult
