@@ -34,7 +34,14 @@ class Binder
     c.put_cmd = "buffer <<" if c.respond_to? :put_cmd=
     c.insert_cmd = "buffer <<" if c.respond_to? :insert_cmd=
     compiled = c.compile template
-    eval compiled
+    # HACK for ruby 1.9
+    if RUBY_VERSION < '1.9'
+      eval compiled
+    else
+      compiled = compiled[0].gsub("\"","'").scan(/(buffer << [\s\S]*)/).join if RUBY_VERSION >= '1.9'
+      eval compiled
+      buffer.gsub!("<?xml version='1.0' encoding='UTF-8'?>\\n","<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    end
     return buffer
   end
 
