@@ -122,7 +122,12 @@ class DataReader
   def generate_rows( headers, rows, dump_header, record_seperator=nil )
     rows.unshift headers if dump_header
     buff = rows.collect { |row|
-      CSV.generate_line( row, record_seperator )
+      # HACK for ruby 1.9
+      if RUBY_VERSION < '1.9'
+        CSV.generate_line( row, record_seperator )
+      else
+        CSV.generate_line( row, :col_sep => record_seperator, :row_sep => '' )
+      end
     }
     return buff.join("\n")
   end
